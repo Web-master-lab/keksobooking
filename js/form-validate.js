@@ -20,6 +20,8 @@ const price = form.querySelector('#price');
 const type = document.querySelector('#type');
 const rooms = document.querySelector('#room_number');
 const guests = document.querySelector('#capacity');
+const timein = document.querySelector('#timein');
+const timeout = document.querySelector('#timeout');
 
 const pristine = new Pristine(form, {
   classTo: 'ad-form',
@@ -30,7 +32,20 @@ const pristine = new Pristine(form, {
 form.addEventListener('submit', (evt) => {
   evt.preventDefault();
   const isValid = pristine.validate();
+  return isValid;
 });
+
+type.addEventListener('change', () => {
+  price.placeholder = TYPES[type.value];
+});
+
+const changeTime = (changedTime, autoChangedTime) => {
+  const selectedTime = changedTime.value;
+  autoChangedTime.value = selectedTime;
+};
+
+timein.addEventListener('change', () => {changeTime(timein, timeout);});
+timeout.addEventListener('change', () => {changeTime(timeout, timein);});
 
 const validatePrice = () => {
   const minValue = TYPES[type.value];
