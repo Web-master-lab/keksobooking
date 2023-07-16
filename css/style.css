@@ -666,6 +666,9 @@ fieldset {
           box-shadow: 0 0 2px 2px #ff6547;
 }
 
+.ad-form__error {
+  color: #ff5635;
+}
 
 /* Футер
    ========================================================================== */
@@ -1052,4 +1055,31 @@ fieldset {
 
 .hidden {
   display: none;
+}
+
+.error__message--fetch {
+  position: fixed;
+  top: calc(50% - 100px);
+  left: calc(50% - 400px);
+  z-index: 10000;
+
+  display: flex;
+  width: 800px;
+  height: 200px;
+  padding: 50px;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  font-size: 32px;
+  color: red;
+
+  background-color: #ffffff;
+  border-radius: 8px;
+
+  box-sizing: border-box;
+}
+
+.error__button--fetch {
+  margin-top: 30px;
 }
