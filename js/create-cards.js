@@ -64,14 +64,26 @@ const createCard = (ad) => {
 
   const featureList = newCard.querySelector('.popup__features');
   featureList.innerHTML = '';
-  featureList.appendChild(createFeatures(ad.offer.features));
+  if (ad.offer.features) {
+    featureList.appendChild(createFeatures(ad.offer.features));
+  } else {
+    featureList.remove();
+  }
 
   const description = newCard.querySelector('.popup__description');
-  description.textContent = ad.offer.description;
+  if (ad.offer.description) {
+    description.textContent = ad.offer.description;
+  } else {
+    description.remove();
+  }
 
   const gallery = newCard.querySelector('.popup__photos');
   gallery.innerHTML = '';
-  gallery.appendChild(createPhotos(ad.offer.photos));
+  if (ad.offer.photos) {
+    gallery.appendChild(createPhotos(ad.offer.photos));
+  } else {
+    gallery.remove();
+  }
 
   return newCard;
 };
