@@ -3,6 +3,9 @@ const mapFilters = document.querySelector('.map__filters');
 const mapSelects = mapFilters.querySelectorAll('select');
 const mapFieldset = mapFilters.querySelector('.map__features');
 const adFieldsets = adForm.querySelectorAll('fieldset');
+const successMessage = document.querySelector('#success').content.querySelector('.success');
+const errorMessage = document.querySelector('#error').content.querySelector('.error');
+const body = document.body;
 
 const getRandomPositiveInteger = (a, b) => {
   const lower = Math.ceil(Math.min(Math.abs(a), Math.abs(b)));
@@ -36,5 +39,33 @@ const toggleToActive = () => {
   adForm.classList.remove('ad-form--disabled');
 };
 
-export {getRandomPositiveInteger, getRandomPositiveFraction, toggleToActive, toggleToDisable};
+const showMessage = (isSuccess) => {
+  if (isSuccess) {
+    const success = successMessage.cloneNode(true);
+
+    document.addEventListener('keydown', (evt) => {
+      if (evt.key === 'Escape') {
+        success.remove();
+      }
+    });
+    document.addEventListener('click', () => success.remove());
+
+    body.appendChild(success);
+  } else {
+    const error = errorMessage.cloneNode(true);
+    const button = error.querySelector('.error__button');
+
+    document.addEventListener('keydown', (evt) => {
+      if (evt.key === 'Escape') {
+        error.remove();
+      }
+    });
+    document.addEventListener('click', () => error.remove());
+    button.addEventListener('click', () => error.remove());
+
+    body.appendChild(error);
+  }
+};
+
+export {getRandomPositiveInteger, getRandomPositiveFraction, toggleToActive, toggleToDisable, showMessage};
 
