@@ -1,4 +1,4 @@
-import { toggleToActive, toggleToDisable, showMessage } from './util.js';
+import { toggleToActive, toggleToDisable, showMessage, getRandomPositiveInteger, debounce } from './util.js';
 import { createCard } from './create-cards.js';
 
 const CENTER_COORDINATE = {
@@ -23,6 +23,23 @@ const ROOMS_LIMITS = {
   100: [0]
 };
 
+const PRICES = {
+  'middle': {
+    from: 10000,
+    to: 49999
+  },
+  'low': {
+    from: 0,
+    to: 9999
+  },
+  'high': {
+    from: 50000,
+    to: 100000
+  }
+};
+
+const RERENDER_DELAY = 500;
+
 const address = document.querySelector('#address');
 const form = document.querySelector('.ad-form');
 const price = form.querySelector('#price');
@@ -38,6 +55,14 @@ const description = document.querySelector('#description');
 const features = document.querySelectorAll('.features__checkbox');
 const images = document.querySelector('#images');
 const avatar = document.querySelector('#avatar');
+const filters = document.querySelectorAll('.map__filter');
+const checkboxes = document.querySelectorAll('.map__checkbox');
+const housingType = document.querySelector('#housing-type');
+const housingPrice = document.querySelector('#housing-price');
+const housingRooms = document.querySelector('#housing-rooms');
+const housingGuests = document.querySelector('#housing-guests');
+const currentMarkers = [];
+const serverData = [];
 
 noUiSlider.create(sliderElement, {
   range: {
@@ -113,10 +138,89 @@ const regularPinIcon = L.icon({
   iconAnchor: [20, 40]
 });
 
+const filter = () => {
+  currentMarkers.forEach((marker) => (marker.remove()));
+
+  const dataArrayClone = serverData.slice();
+  let filteredArray;
+
+  filteredArray = dataArrayClone.filter((data) => {
+    if (housingType.value !== 'any') {
+      return data.offer.type === housingType.value;
+    }
+    return true;
+  });
+
+  filteredArray = filteredArray.filter((data) => {
+    if (housingRooms.value !== 'any') {
+      return data.offer.rooms === Number(housingRooms.value);
+    }
+    return true;
+  });
+
+  filteredArray = filteredArray.filter((data) => {
+    if (housingPrice.value !== 'any') {
+      return (PRICES[housingPrice.value].from <= data.offer.price && data.offer.price <= PRICES[housingPrice.value].to);
+    }
+    return true;
+  });
+
+  filteredArray = filteredArray.filter((data) => {
+    if (housingGuests.value !== 'any') {
+      return data.offer.guests === Number(housingGuests.value);
+    }
+    return true;
+  });
+
+  filteredArray = filteredArray.filter((data) => {
+    let isRelevant = true;
+
+    for (const checkbox of checkboxes) {
+      if (checkbox.checked === true) {
+        if (!Object.prototype.hasOwnProperty.call(data.offer, 'features')) {
+          isRelevant = false;
+          break;
+        }
+
+        isRelevant = data.offer.features.includes(checkbox.value);
+        if (!isRelevant) {
+          break;
+        }
+      }
+    }
+    return isRelevant;
+  });
+
+  while (filteredArray.length > 10) {
+    const n = getRandomPositiveInteger(0, filteredArray.length - 1);
+    filteredArray.splice(n, 1);
+  }
+
+  filteredArray.forEach((ad) => {
+    const regularPinMarker = L.marker(
+      {
+        lat: ad.location.lat,
+        lng: ad.location.lng
+      },
+      {
+        icon: regularPinIcon
+      }
+    );
+    currentMarkers.push(regularPinMarker);
+    regularPinMarker
+      .addTo(map)
+      .bindPopup(createCard(ad));
+  });
+};
+
 fetch('https://25.javascript.pages.academy/keksobooking/data')
   .then((response) => response.json())
   .then((ads) => {
-    ads.forEach((ad) => {
+    serverData.push.apply(serverData, ads);
+
+    for (let n = 0; n <= 9; n++) {
+      const ad = ads[n];
+
       const regularPinMarker = L.marker(
         {
           lat: ad.location.lat,
@@ -126,10 +230,22 @@ fetch('https://25.javascript.pages.academy/keksobooking/data')
           icon: regularPinIcon
         }
       );
+      currentMarkers.push(regularPinMarker);
       regularPinMarker
         .addTo(map)
         .bindPopup(createCard(ad));
-    });
+    }
+
+    setFiltersChange(debounce(
+      () => filter(),
+      RERENDER_DELAY
+    ));
+
+    setCheckboxesChange(debounce(
+      () => filter(),
+      RERENDER_DELAY
+    ));
+
   })
   .catch(() => {
     const errorElement = document.createElement('div');
@@ -146,7 +262,7 @@ fetch('https://25.javascript.pages.academy/keksobooking/data')
     button.addEventListener('click', () => errorElement.remove());
   });
 
-const clearForm = () => {
+const resetForm = () => {
   sliderElement.noUiSlider.updateOptions({
     range: {
       min: 0,
@@ -181,7 +297,13 @@ const clearForm = () => {
   features.forEach((feature) => {feature.checked = false;});
   images.value = '';
   avatar.value = '';
+
+  filters.forEach((select) => (select.value = 'any'));
+  checkboxes.forEach((checkbox) => (checkbox.checked = false));
+
+  map.closePopup();
 };
+
 
 form.addEventListener('submit', (evt) => {
   evt.preventDefault();
@@ -196,7 +318,7 @@ form.addEventListener('submit', (evt) => {
       }
     ).then(() => {
       showMessage(true);
-      clearForm();
+      resetForm();
     })
       .catch(() => {showMessage(false);});
   }
@@ -204,7 +326,7 @@ form.addEventListener('submit', (evt) => {
 
 reset.addEventListener('click', (evt) => {
   evt.preventDefault();
-  clearForm();
+  resetForm();
 });
 
 type.addEventListener('change', () => {
@@ -234,3 +356,19 @@ const validateRooms = () => {
 
 pristine.addValidator(guests, validateRooms, 'На каждого гостя должна быть 1 комната');
 pristine.addValidator(price, validatePrice, 'Неверная цена');
+
+function setFiltersChange (cb) {
+  filters.forEach((select) => {
+    select.addEventListener('change', () => {
+      cb();
+    });
+  });
+}
+
+function setCheckboxesChange (cb) {
+  checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      cb();
+    });
+  });
+}
